@@ -42,3 +42,33 @@ export async function POST(request: Request, { params }: { params: { userId: str
     return NextResponse.json({ error: "Failed to update cart" }, { status: 500 });
   }
 }
+
+// DELETE /api/cart/[userId]?itemId=123
+export async function DELETE(request: Request, { params }: { params: { userId: string } }) {
+  const url = new URL(request.url);
+  const itemId = url.searchParams.get("itemId");
+
+  if (!itemId) {
+    return NextResponse.json({ error: "Item ID required" }, { status: 400 });
+  }
+
+  try {
+    await db.query("DELETE FROM cart_items WHERE id = ?", [itemId]);
+    return NextResponse.json({ message: "Item removed" });
+  } catch (error) {
+    console.error("DELETE /cart error:", error);
+    return NextResponse.json({ error: "Failed to remove item" }, { status: 500 });
+  }
+}
+
+// PUT /api/cart/[userId] - with JSON body { itemId, quantity }
+export async function PUT(request: Request, { params }: { params: { userId: string } }) {
+  try {
+    const { itemId, quantity } = await request.json();
+    await db.query("UPDATE cart_items SET quantity = ? WHERE id = ?", [quantity, itemId]);
+    return NextResponse.json({ message: "Quantity updated" });
+  } catch (error) {
+    console.error("PUT /cart error:", error);
+    return NextResponse.json({ error: "Failed to update quantity" }, { status: 500 });
+  }
+}

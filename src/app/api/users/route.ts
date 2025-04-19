@@ -1,6 +1,6 @@
-// src/app/api/users/route.ts
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs"; // Import bcryptjs for hashing
 
 export async function GET() {
   try {
@@ -16,10 +16,12 @@ export async function POST(request: Request) {
   try {
     const { name, email, password } = await request.json();
 
-    // You should hash passwords before saving them in production
+    // Hash the password before storing it in the database
+    const passwordHash = await bcrypt.hash(password, 10); // 10 is the salt rounds
+
     const [result]: any = await db.query(
       "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
-      [name, email, password]
+      [name, email, passwordHash]
     );
 
     return NextResponse.json({ id: result.insertId, name, email }, { status: 201 });

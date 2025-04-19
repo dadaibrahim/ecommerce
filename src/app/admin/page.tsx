@@ -32,25 +32,25 @@ export default function AdminDashboard() {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("https://68020cf381c7e9fbcc442b05.mockapi.io/products");
+      const res = await axios.get("http://localhost:3000/api/products");
       setProducts(res.data);
     } catch (err) {
       console.error("Error fetching products:", err);
     }
   };
-
+  
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("/api/orders"); // Replace with actual API
+      const res = await axios.get("http://localhost:3000/api/orders");
       setOrders(res.data);
     } catch (err) {
       console.error("Error fetching orders:", err);
     }
   };
-
+  
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     try {
-      await axios.put(`/api/orders/${orderId}`, { status: newStatus });
+      await axios.put(`http://localhost:3000/api/orders/${orderId}`, { status: newStatus });
       setOrders(orders.map(order =>
         order.id === orderId ? { ...order, status: newStatus } : order
       ));
@@ -58,34 +58,34 @@ export default function AdminDashboard() {
       console.error("Error updating order status:", err);
     }
   };
-
+  
   const uploadImage = async (file) => {
     const formData = new FormData();
     formData.append("image", file);
-
-    const res = await fetch("/api/upload", {
+  
+    const res = await fetch("http://localhost:3000/api/upload", {
       method: "POST",
       body: formData
     });
-
+  
     const data = await res.json();
     return data.url;
   };
-
+  
   const handleAddProduct = async () => {
     try {
       const imageUrl = newProduct.imageFile
         ? await uploadImage(newProduct.imageFile)
         : "";
-
-      const res = await axios.post("https://68020cf381c7e9fbcc442b05.mockapi.io/products", {
+  
+      const res = await axios.post("http://localhost:3000/api/products", {
         name: newProduct.name,
         price: newProduct.price,
         description: newProduct.description,
         stock: newProduct.stock,
         image: imageUrl
       });
-
+  
       setProducts([...products, res.data]);
       setNewProduct({
         name: "",
@@ -98,37 +98,25 @@ export default function AdminDashboard() {
       console.error("Error adding product:", err);
     }
   };
-
+  
   const handleDeleteProduct = async (id) => {
     try {
-      await axios.delete(`https://68020cf381c7e9fbcc442b05.mockapi.io/products/${id}`);
+      await axios.delete(`http://localhost:3000/api/products/${id}`);
       setProducts(products.filter((product) => product.id !== id));
     } catch (err) {
       console.error("Error deleting product:", err);
     }
   };
-
-  const handleEditProduct = (product) => {
-    setEditingProductId(product.id);
-    setEditingProduct({
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      imageFile: null,
-      description: product.description,
-      stock: product.stock
-    });
-  };
-
+  
   const handleUpdateProduct = async () => {
     try {
       let imageUrl = editingProduct.image;
       if (editingProduct.imageFile) {
         imageUrl = await uploadImage(editingProduct.imageFile);
       }
-
+  
       const res = await axios.put(
-        `https://68020cf381c7e9fbcc442b05.mockapi.io/products/${editingProductId}`,
+        `http://localhost:3000/api/products/${editingProductId}`,
         {
           name: editingProduct.name,
           price: editingProduct.price,
@@ -137,7 +125,7 @@ export default function AdminDashboard() {
           image: imageUrl
         }
       );
-
+  
       setProducts(
         products.map((p) => (p.id === editingProductId ? res.data : p))
       );
@@ -154,6 +142,7 @@ export default function AdminDashboard() {
       console.error("Error updating product:", err);
     }
   };
+  
 
   return (
     <div className="p-6 space-y-10">

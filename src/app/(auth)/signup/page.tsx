@@ -9,8 +9,13 @@ export default function SignUpPage() {
 
   const onSubmit = async (data: any) => {
     try {
-      // Send form data to MockAPI
-      const response = await axios.post("https://67e8f1d1bdcaa2b7f5b82bb1.mockapi.io/users", data);
+      // Send form data to the API (now running locally)
+      const response = await axios.post("http://localhost:3000/api/users", {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
+
       console.log("User created:", response.data);
 
       // Redirect to login page after successful signup

@@ -41,10 +41,21 @@ export default function AdminDashboard() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("https://mockapi.io/api/orders");
+      const res = await axios.get("/api/orders"); // Replace with actual API
       setOrders(res.data);
     } catch (err) {
       console.error("Error fetching orders:", err);
+    }
+  };
+
+  const handleStatusChange = async (orderId: number, newStatus: string) => {
+    try {
+      await axios.put(`/api/orders/${orderId}`, { status: newStatus });
+      setOrders(orders.map(order =>
+        order.id === orderId ? { ...order, status: newStatus } : order
+      ));
+    } catch (err) {
+      console.error("Error updating order status:", err);
     }
   };
 
@@ -191,16 +202,51 @@ export default function AdminDashboard() {
         </Card>
 
         <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-4">Order Tracking</h2>
-          <ul className="space-y-2">
-            {orders.map((order) => (
-              <li key={order.id} className="border p-2 rounded-md">
-                <p><strong>Order ID:</strong> {order.id}</p>
-                <p><strong>Product:</strong> {order.productName}</p>
-                <p><strong>Status:</strong> {order.status}</p>
-              </li>
-            ))}
-          </ul>
+          <h2 className="text-xl font-semibold mb-4">Order History</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto border">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="p-2 border">Order ID</th>
+                  <th className="p-2 border">User ID</th>
+                  <th className="p-2 border">Items</th>
+                  <th className="p-2 border">Total</th>
+                  <th className="p-2 border">Status</th>
+                  <th className="p-2 border">Created At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                  <tr key={order.id} className="text-center border-t">
+                    <td className="p-2 border">{order.id}</td>
+                    <td className="p-2 border">{order.user_id}</td>
+                    <td className="p-2 border text-left">
+                      <ul className="list-disc pl-4">
+                        {order.items?.map((item, index) => (
+                          <li key={index}>
+                            {item.product_name} (x{item.quantity})
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                    <td className="p-2 border">₹{Number(order.total).toFixed(2)}</td>
+                    <td className="p-2 border">
+                      <select
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        className="border px-2 py-1 rounded-md"
+                      >
+                        <option value="PENDING">PENDING</option>
+                        <option value="PAID">PAID</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                      </select>
+                    </td>
+                    <td className="p-2 border">{new Date(order.created_at).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       </div>
 

@@ -1,43 +1,41 @@
+// order/route.ts
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    const { userId, items } = await request.json();
+    const [orders] = await db.query("SELECT * FROM orders ORDER BY created_at DESC");
 
-    const total = items.reduce(
-      (sum: number, item: { price: number; quantity: number }) =>
-        sum + item.price * item.quantity,
-      0
+    const orderIds = orders.map((order: any) => order.id);
+
+    if (orderIds.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    const [items] = await db.query(
+      `SELECT oi.*, p.name as product_name 
+       FROM order_items oi 
+       JOIN products p ON oi.product_id = p.id 
+       WHERE oi.order_id IN (?)`,
+      [orderIds]
     );
 
-    const [orderResult]: any = await db.query(
-      "INSERT INTO orders (user_id, total) VALUES (?, ?)",
-      [userId, total]
-    );
-    const orderId = orderResult.insertId;
+    const orderMap = new Map();
+    for (const order of orders) {
+      orderMap.set(order.id, { ...order, items: [] });
+    }
 
-    const orderItemsData = items.map(
-      (item: { productId: number; quantity: number; price: number }) => [
-        orderId,
-        item.productId,
-        item.quantity,
-        item.price,
-      ]
-    );
+    for (const item of items) {
+      orderMap.get(item.order_id).items.push({
+        product_name: item.product_name,
+        quantity: item.quantity,
+        price: item.price,
+      });
+    }
 
-    await db.query(
-      "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ?",
-      [orderItemsData]
-    );
-
-    return NextResponse.json({ orderId }, { status: 201 });
+    return NextResponse.json(Array.from(orderMap.values()));
   } catch (error) {
-    console.error("Error creating order:", error);
+    console.error("Error fetching orders:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}
-
-export function GET() {
-  return NextResponse.json({ message: "Use POST to place an order." }, { status: 405 });
 }

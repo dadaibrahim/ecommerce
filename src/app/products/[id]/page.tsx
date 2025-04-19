@@ -1,70 +1,74 @@
-"use client"
-import { useCartStore } from '@/lib/store/cartstore';
+'use client';
+
+import axios from 'axios';
+import { useParams } from 'next/navigation';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { useCartStore } from '@/lib/store/cartstore';
+import { useEffect, useState } from 'react';
 
-// Temporary static data
-const products = [
-  {
-    id: 1,
-    name: 'Premium Headphones',
-    price: 89.99,
-    image: '/products/product-1.jpg',
-    description: 'High-quality wireless headphones with noise cancellation.',
-  },
-  {
-    id: 2,
-    name: 'Smart Watch',
-    price: 149.99,
-    image: '/products/product-2.jpg',
-    description: 'Track your fitness and stay connected on the go.',
-  },
-  {
-    id: 3,
-    name: 'Leather Backpack',
-    price: 69.99,
-    image: '/products/product-3.jpg',
-    description: 'Stylish, durable, and perfect for everyday carry.',
-  },
-];
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  description: string;
+  image_url: string;
+}
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  const product = products.find((p) => p.id === parseInt(params.id));
+async function fetchProduct(id: string): Promise<Product | null> {
+  try {
+    const res = await axios.get(`/api/products?id=${id}`);
+    return res.data;
+  } catch (error) {
+    console.error('Failed to fetch product:', error);
+    return null;
+  }
+}
 
-  if (!product) return notFound();
+export default function ProductDetailPage() {
+  const [product, setProduct] = useState<Product | null>(null);
+  const params = useParams();
+  const { addToCart } = useCartStore();
 
-  const { items, addToCart } = useCartStore();
-  console.log(items);
+  useEffect(() => {
+    const id = params?.id as string;
+    if (!id) return;
+
+    fetchProduct(id).then((data) => {
+      if (data) setProduct(data);
+    });
+  }, [params]);
+
+  if (!product) {
+    return <p>Loading...</p>;
+  }
 
   return (
-    <>
-      <div className="max-w-6xl mx-auto px-6 py-12 grid md:grid-cols-2 gap-12">
-        <Image
-          src={product.image}
-          alt={product.name}
-          width={600}
-          height={600}
-          className="rounded-lg w-full"
-        />
-        <div>
-          <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
-          <p className="text-2xl text-gray-800 mb-4">${product.price.toFixed(2)}</p>
-          <p className="text-gray-600 mb-6">{product.description}</p>
-          <button
-        onClick={() =>
-          addToCart({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-          })
-        }
-        className="bg-black text-white px-6 py-3 rounded-xl hover:opacity-90 transition"
-      >
-        Add to Cart
-      </button>
-        </div>
+    <div className="max-w-6xl mx-auto px-6 py-12 grid md:grid-cols-2 gap-12">
+      <Image
+        src={product.image_url}
+        alt={product.name}
+        width={600}
+        height={600}
+        className="rounded-lg w-full"
+      />
+      <div>
+        <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
+        <p className="text-2xl text-gray-800 mb-4">${Number(product.price).toFixed(2)}</p>
+        <p className="text-gray-600 mb-6">{product.description}</p>
+        <button
+          onClick={() =>
+            addToCart({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              image: product.image_url,
+            })
+          }
+          className="bg-black text-white px-6 py-3 rounded-xl hover:opacity-90 transition"
+        >
+          Add to Cart
+        </button>
       </div>
-    </>
+    </div>
   );
 }

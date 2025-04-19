@@ -11,15 +11,18 @@ export default function AdminDashboard() {
   const [newProduct, setNewProduct] = useState({
     name: "",
     price: "",
-    image: "",
-    description: ""
+    imageFile: null,
+    description: "",
+    stock: ""
   });
   const [editingProductId, setEditingProductId] = useState(null);
   const [editingProduct, setEditingProduct] = useState({
     name: "",
     price: "",
     image: "",
-    description: ""
+    imageFile: null,
+    description: "",
+    stock: ""
   });
 
   useEffect(() => {
@@ -29,7 +32,7 @@ export default function AdminDashboard() {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("https://mockapi.io/api/products");
+      const res = await axios.get("https://68020cf381c7e9fbcc442b05.mockapi.io/products");
       setProducts(res.data);
     } catch (err) {
       console.error("Error fetching products:", err);
@@ -45,11 +48,41 @@ export default function AdminDashboard() {
     }
   };
 
+  const uploadImage = async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+    return data.url;
+  };
+
   const handleAddProduct = async () => {
     try {
-      const res = await axios.post("https://mockapi.io/api/products", newProduct);
+      const imageUrl = newProduct.imageFile
+        ? await uploadImage(newProduct.imageFile)
+        : "";
+
+      const res = await axios.post("https://68020cf381c7e9fbcc442b05.mockapi.io/products", {
+        name: newProduct.name,
+        price: newProduct.price,
+        description: newProduct.description,
+        stock: newProduct.stock,
+        image: imageUrl
+      });
+
       setProducts([...products, res.data]);
-      setNewProduct({ name: "", price: "", image: "", description: "" });
+      setNewProduct({
+        name: "",
+        price: "",
+        imageFile: null,
+        description: "",
+        stock: ""
+      });
     } catch (err) {
       console.error("Error adding product:", err);
     }
@@ -57,7 +90,7 @@ export default function AdminDashboard() {
 
   const handleDeleteProduct = async (id) => {
     try {
-      await axios.delete(`https://mockapi.io/api/products/${id}`);
+      await axios.delete(`https://68020cf381c7e9fbcc442b05.mockapi.io/products/${id}`);
       setProducts(products.filter((product) => product.id !== id));
     } catch (err) {
       console.error("Error deleting product:", err);
@@ -70,21 +103,42 @@ export default function AdminDashboard() {
       name: product.name,
       price: product.price,
       image: product.image,
-      description: product.description
+      imageFile: null,
+      description: product.description,
+      stock: product.stock
     });
   };
 
   const handleUpdateProduct = async () => {
     try {
+      let imageUrl = editingProduct.image;
+      if (editingProduct.imageFile) {
+        imageUrl = await uploadImage(editingProduct.imageFile);
+      }
+
       const res = await axios.put(
-        `https://mockapi.io/api/products/${editingProductId}`,
-        editingProduct
+        `https://68020cf381c7e9fbcc442b05.mockapi.io/products/${editingProductId}`,
+        {
+          name: editingProduct.name,
+          price: editingProduct.price,
+          description: editingProduct.description,
+          stock: editingProduct.stock,
+          image: imageUrl
+        }
       );
+
       setProducts(
         products.map((p) => (p.id === editingProductId ? res.data : p))
       );
       setEditingProductId(null);
-      setEditingProduct({ name: "", price: "", image: "", description: "" });
+      setEditingProduct({
+        name: "",
+        price: "",
+        image: "",
+        imageFile: null,
+        description: "",
+        stock: ""
+      });
     } catch (err) {
       console.error("Error updating product:", err);
     }
@@ -95,7 +149,7 @@ export default function AdminDashboard() {
       <h1 className="text-3xl font-bold">Admin Dashboard</h1>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="p-4">
           <h2 className="text-xl font-semibold mb-4">Add New Product</h2>
           <input
             type="text"
@@ -112,10 +166,18 @@ export default function AdminDashboard() {
             className="w-full border rounded-md px-4 py-2 mb-2"
           />
           <input
-            type="text"
-            placeholder="Image URL"
-            value={newProduct.image}
-            onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+            type="number"
+            placeholder="Stock"
+            value={newProduct.stock}
+            onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+            className="w-full border rounded-md px-4 py-2 mb-2"
+          />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) =>
+              setNewProduct({ ...newProduct, imageFile: e.target.files?.[0] || null })
+            }
             className="w-full border rounded-md px-4 py-2 mb-2"
           />
           <input
@@ -128,10 +190,10 @@ export default function AdminDashboard() {
           <Button onClick={handleAddProduct}>Add Product</Button>
         </Card>
 
-        <Card>
+        <Card className="p-4">
           <h2 className="text-xl font-semibold mb-4">Order Tracking</h2>
           <ul className="space-y-2">
-            {orders.map((order: any) => (
+            {orders.map((order) => (
               <li key={order.id} className="border p-2 rounded-md">
                 <p><strong>Order ID:</strong> {order.id}</p>
                 <p><strong>Product:</strong> {order.productName}</p>
@@ -145,7 +207,7 @@ export default function AdminDashboard() {
       <div>
         <h2 className="text-2xl font-semibold mb-4">All Products</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          {products.map((product: any) => (
+          {products.map((product) => (
             <Card key={product.id} className="p-4 space-y-2">
               {editingProductId === product.id ? (
                 <>
@@ -166,10 +228,18 @@ export default function AdminDashboard() {
                     className="w-full border rounded-md px-2 py-1"
                   />
                   <input
-                    type="text"
-                    value={editingProduct.image}
+                    type="number"
+                    value={editingProduct.stock}
                     onChange={(e) =>
-                      setEditingProduct({ ...editingProduct, image: e.target.value })
+                      setEditingProduct({ ...editingProduct, stock: e.target.value })
+                    }
+                    className="w-full border rounded-md px-2 py-1"
+                  />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setEditingProduct({ ...editingProduct, imageFile: e.target.files?.[0] || null })
                     }
                     className="w-full border rounded-md px-2 py-1"
                   />
@@ -194,6 +264,7 @@ export default function AdminDashboard() {
                   )}
                   <h3 className="text-lg font-medium">{product.name}</h3>
                   <p className="text-gray-600">Price: ₹{product.price}</p>
+                  <p className="text-gray-600">Stock: {product.stock}</p>
                   <p className="text-gray-700 text-sm">{product.description}</p>
                   <div className="flex gap-2 mt-2">
                     <Button onClick={() => handleEditProduct(product)}>Edit</Button>

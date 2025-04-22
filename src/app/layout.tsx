@@ -1,7 +1,7 @@
 // app/layout.tsx
 import './globals.css'; 
 import { ReactNode } from "react";
-import Navbar from "@/components/navbar"; // Make sure the import path is correct
+ // Make sure the import path is correct
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
@@ -12,7 +12,6 @@ export default function Layout({ children }: { children: ReactNode }) {
         <title>Your E-Commerce Store</title>
       </head>
       <body>
-        <Navbar />
         <main>{children}</main>
       </body>
     </html>

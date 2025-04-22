@@ -16,25 +16,18 @@ export default function LoginPage() {
 
   const onSubmit = async (data: any) => {
     try {
-      const response = await axios.post("http://localhost:3000/api/sessions", {
+      const response = await axios.post("/api/sessions", {
         email: data.email,
         password: data.password,
       });
 
-      const { sessionToken, userId, name } = response.data;
+      const { name } = response.data;
 
-      if (sessionToken) {
-        // Store the session token
-        localStorage.setItem("sessionToken", sessionToken);
-
-        // Check if the user is 'admin' and redirect accordingly
-        if (name === "admin") {
-          router.push("/admin");
-        } else {
-          router.push("/");  // Regular user redirect to homepage
-        }
+      if (name) {
+        // Redirect based on user role
+        router.push(name === "admin" ? "/admin" : "/");
       } else {
-        setLoginError("Invalid login response.");
+        setLoginError("Login failed. Please try again.");
       }
     } catch (error: any) {
       console.error("Login error:", error);
